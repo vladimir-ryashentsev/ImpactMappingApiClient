@@ -7,6 +7,6 @@ import rx.Observable;
  */
 
 public interface IApi {
-    <T> Observable<T> get(Class<T> clazz);
+    <T> Observable<T> observe(Class<T> clazz);
     <T> Observable<Void> execute(T command);
 }

@@ -39,7 +39,7 @@ public class Steps {
     private IApi api;
 
     @BeforeScenario
-    public void someBeforeMethod() {
+    public void initApi() {
         IStringStorage stringStorage = new InMemoryStringStorage();
         Gson gson = new GsonBuilder().create();
         IStringifier stringifier = new GsonStringifier(gson);
@@ -55,17 +55,17 @@ public class Steps {
         TestSubscriber<Void> subscriber = new TestSubscriber<>();
         CreateGoalCommand command = new CreateGoalCommand(title, date);
         api.execute(command).subscribe(subscriber);
-        subscriber.assertCompleted();
         subscriber.assertNoErrors();
+        subscriber.assertCompleted();
         assertTrue(subscriber.getOnNextEvents().isEmpty());
     }
 
     @Then("the goal(title=$title, date=$date) appears in the goals list")
     public void theGoalAppearsInTheGoalsList(String title, Date date) {
         TestSubscriber<Goals> subscriber = new TestSubscriber<>();
-        api.get(Goals.class).subscribe(subscriber);
+        api.observe(Goals.class).subscribe(subscriber);
 
-        subscriber.assertCompleted();
+        subscriber.assertNotCompleted();
         subscriber.assertNoErrors();
 
         List<Goals> projections = subscriber.getOnNextEvents();

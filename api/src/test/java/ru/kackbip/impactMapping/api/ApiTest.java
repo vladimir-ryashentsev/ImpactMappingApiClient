@@ -8,12 +8,9 @@ import java.util.Map;
 
 import ru.kackbip.impactMapping.api.commands.executors.ICommandExecutor;
 import ru.kackbip.impactMapping.api.projections.repository.IProjectionRepository;
-import ru.kackbip.impactMapping.api.projections.repository.ProjectionNotFoundException;
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -24,18 +21,21 @@ import static org.mockito.Mockito.when;
  */
 public class ApiTest {
 
-    private class SomeCommand{}
-    private class SomeUnknownCommand{}
+    private class SomeCommand {
+    }
+
+    private class SomeUnknownCommand {
+    }
 
     private static final TestProjection STORED_INNER = new TestProjection("qweqwe", 321321, null);
     private static final TestProjection STORED_PROJECTION = new TestProjection("strstr", 123123, STORED_INNER);
 
-    private IApi api;
+    private Api api;
     private IProjectionRepository projectionRepository;
     private ICommandExecutor<SomeCommand> commandExecutor;
 
     @Before
-    public void init(){
+    public void init() {
         projectionRepository = mock(IProjectionRepository.class);
 
         commandExecutor = mock(ICommandExecutor.class);
@@ -46,54 +46,28 @@ public class ApiTest {
     }
 
     @Test
-    public void executeCommandForUnknownExecutor(){
+    public void executeCommandForUnknownExecutor() {
         TestSubscriber<Void> subscriber = new TestSubscriber<>();
 
         SomeUnknownCommand command = new SomeUnknownCommand();
         api.execute(command).subscribe(subscriber);
 
         subscriber.assertError(CommandExecutorNotFound.class);
-        subscriber.assertNotCompleted();
         assertTrue(subscriber.getOnNextEvents().isEmpty());
     }
 
     @Test
-    public void executeNullCommand(){
+    public void executeNullCommand() {
         TestSubscriber<Void> subscriber = new TestSubscriber<>();
 
         api.execute(null).subscribe(subscriber);
 
         subscriber.assertError(IllegalArgumentException.class);
-        subscriber.assertNotCompleted();
         assertTrue(subscriber.getOnNextEvents().isEmpty());
     }
 
-//    @Test
-//    public void executeCommandWithProjectionChange(){
-//        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
-//        TestSubscriber<Void> createSubscriber = new TestSubscriber<>();
-//        TestSubscriber<Goals> getSubscriber = new TestSubscriber<>();
-//
-//
-//        api.get(Goals.class).subscribe(getSubscriber);
-//        getSubscriber.assertNoValues();
-//        getSubscriber.assertNoErrors();
-//        getSubscriber.assertNotCompleted();
-//        verify(projectionRepository).observe(Goals.class);
-//
-//        SomeCommand command = new SomeCommand();
-//        when(commandExecutor.process(command)).thenReturn(Observable.empty());
-//        api.execute(command).subscribe(createSubscriber);
-//        createSubscriber.assertNoErrors();
-//        createSubscriber.assertNoValues();
-//        createSubscriber.assertCompleted();
-//
-//        verify(projectionRepository).observe(Goals.class);
-//        getSubscriber.assertValue();
-//    }
-
     @Test
-    public void executeCommandWithoutProjectionsChange(){
+    public void executeCommand() {
         TestSubscriber<Void> subscriber = new TestSubscriber<>();
 
         SomeCommand command = new SomeCommand();
@@ -108,40 +82,34 @@ public class ApiTest {
     }
 
     @Test
-    public void getNonExistentProjection(){
-        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
+    public void getNonExistentProjection() {
+        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.never());
 
         TestSubscriber<TestProjection> subscriber = new TestSubscriber<>();
-        api.get(TestProjection.class).subscribe(subscriber);
+        api.observe(TestProjection.class).subscribe(subscriber);
 
-        subscriber.assertError(ProjectionNotFoundException.class);
-        assertTrue(subscriber.getOnNextEvents().isEmpty());
+        subscriber.assertNoErrors();
+        subscriber.assertNoValues();
+        subscriber.assertNotCompleted();
 
         verify(projectionRepository).observe(TestProjection.class);
     }
 
     @Test
-    public void getProjection(){
-        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.just(STORED_PROJECTION));
+    public void getProjection() {
+        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.create(subscriber -> subscriber.onNext(STORED_PROJECTION)));
 
         TestSubscriber<TestProjection> subscriber = new TestSubscriber<>();
-        api.get(TestProjection.class).subscribe(subscriber);
+        api.observe(TestProjection.class).subscribe(subscriber);
 
         subscriber.assertNoErrors();
-        subscriber.assertCompleted();
+        subscriber.assertNotCompleted();
 
         verify(projectionRepository).observe(TestProjection.class);
 
-        assertTrue(subscriber.getOnNextEvents().size()==1);
+        assertTrue(subscriber.getOnNextEvents().size() == 1);
         TestProjection projection = subscriber.getOnNextEvents().get(0);
-        assertEquals(STORED_PROJECTION.getNum(), projection.getNum());
-        assertEquals(STORED_PROJECTION.getStr(), projection.getStr());
-
-        TestProjection inner = projection.getInner();
-        assertNotNull(inner);
-        assertEquals(STORED_INNER.getNum(), inner.getNum());
-        assertEquals(STORED_INNER.getStr(), inner.getStr());
-        assertEquals(STORED_INNER.getInner(), inner.getInner());
+        assertTrue(STORED_PROJECTION == projection);
     }
 
 }

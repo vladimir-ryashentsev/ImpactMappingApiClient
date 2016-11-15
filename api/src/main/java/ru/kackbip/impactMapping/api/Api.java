@@ -20,7 +20,7 @@ public class Api implements IApi {
         this.commandsExecutors = commandExecutors;
     }
 
-    public <T> Observable<T> get(Class<T> clazz) {
+    public <T> Observable<T> observe(Class<T> clazz) {
         return projectionRepository.observe(clazz);
     }
 
