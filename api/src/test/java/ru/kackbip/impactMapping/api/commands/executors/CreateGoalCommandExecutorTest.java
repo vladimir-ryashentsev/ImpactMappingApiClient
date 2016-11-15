@@ -48,14 +48,14 @@ public class CreateGoalCommandExecutorTest {
 
     @Test
     public void processCommandWhenProjectionAlreadyExists() {
-        when(projectionRepository.restore(Goals.class)).thenReturn(Observable.just(STORED_PROJECTION));
+        when(projectionRepository.observe(Goals.class)).thenReturn(Observable.just(STORED_PROJECTION));
         verifySubscriber(createGoal());
         verifyCommunicationWithProjectionRepository(3);
     }
 
     @Test
     public void processCommandWhenProjectionDoesntExists(){
-        when(projectionRepository.restore(Goals.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
+        when(projectionRepository.observe(Goals.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
         verifySubscriber(createGoal());
         verifyCommunicationWithProjectionRepository(1);
     }
@@ -74,7 +74,7 @@ public class CreateGoalCommandExecutorTest {
     }
 
     private void verifyCommunicationWithProjectionRepository(int wantedGoalsCount){
-        verify(projectionRepository).restore(Goals.class);
+        verify(projectionRepository).observe(Goals.class);
         ArgumentCaptor<Goals> captor = ArgumentCaptor.forClass(Goals.class);
         verify(projectionRepository).store(captor.capture());
         Goals resultProjection = captor.getValue();

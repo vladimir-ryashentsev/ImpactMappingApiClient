@@ -21,9 +21,15 @@ public class ProjectionRepository implements IProjectionRepository {
                 .flatMap(key -> storage.store(key, projection));
     }
 
-    public <T> Observable<T> restore(Class<T> clazz){
+    public <T> Observable<T> get(Class<T> clazz){
         return canonicalNameOfClass(clazz)
-                .flatMap(key -> storage.restore(key, clazz))
+                .flatMap(key -> storage.get(key, clazz))
+                .onErrorResumeNext(throwable -> Observable.error(new ProjectionNotFoundException()));
+    }
+
+    public <T> Observable<T> observe(Class<T> clazz){
+        return canonicalNameOfClass(clazz)
+                .flatMap(key -> storage.observe(key, clazz))
                 .onErrorResumeNext(throwable -> Observable.error(new ProjectionNotFoundException()));
     }
 

@@ -68,8 +68,32 @@ public class ApiTest {
         assertTrue(subscriber.getOnNextEvents().isEmpty());
     }
 
+//    @Test
+//    public void executeCommandWithProjectionChange(){
+//        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
+//        TestSubscriber<Void> createSubscriber = new TestSubscriber<>();
+//        TestSubscriber<Goals> getSubscriber = new TestSubscriber<>();
+//
+//
+//        api.get(Goals.class).subscribe(getSubscriber);
+//        getSubscriber.assertNoValues();
+//        getSubscriber.assertNoErrors();
+//        getSubscriber.assertNotCompleted();
+//        verify(projectionRepository).observe(Goals.class);
+//
+//        SomeCommand command = new SomeCommand();
+//        when(commandExecutor.process(command)).thenReturn(Observable.empty());
+//        api.execute(command).subscribe(createSubscriber);
+//        createSubscriber.assertNoErrors();
+//        createSubscriber.assertNoValues();
+//        createSubscriber.assertCompleted();
+//
+//        verify(projectionRepository).observe(Goals.class);
+//        getSubscriber.assertValue();
+//    }
+
     @Test
-    public void executeCommand(){
+    public void executeCommandWithoutProjectionsChange(){
         TestSubscriber<Void> subscriber = new TestSubscriber<>();
 
         SomeCommand command = new SomeCommand();
@@ -85,7 +109,7 @@ public class ApiTest {
 
     @Test
     public void getNonExistentProjection(){
-        when(projectionRepository.restore(TestProjection.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
+        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
 
         TestSubscriber<TestProjection> subscriber = new TestSubscriber<>();
         api.get(TestProjection.class).subscribe(subscriber);
@@ -93,12 +117,12 @@ public class ApiTest {
         subscriber.assertError(ProjectionNotFoundException.class);
         assertTrue(subscriber.getOnNextEvents().isEmpty());
 
-        verify(projectionRepository).restore(TestProjection.class);
+        verify(projectionRepository).observe(TestProjection.class);
     }
 
     @Test
     public void getProjection(){
-        when(projectionRepository.restore(TestProjection.class)).thenReturn(Observable.just(STORED_PROJECTION));
+        when(projectionRepository.observe(TestProjection.class)).thenReturn(Observable.just(STORED_PROJECTION));
 
         TestSubscriber<TestProjection> subscriber = new TestSubscriber<>();
         api.get(TestProjection.class).subscribe(subscriber);
@@ -106,7 +130,7 @@ public class ApiTest {
         subscriber.assertNoErrors();
         subscriber.assertCompleted();
 
-        verify(projectionRepository).restore(TestProjection.class);
+        verify(projectionRepository).observe(TestProjection.class);
 
         assertTrue(subscriber.getOnNextEvents().size()==1);
         TestProjection projection = subscriber.getOnNextEvents().get(0);

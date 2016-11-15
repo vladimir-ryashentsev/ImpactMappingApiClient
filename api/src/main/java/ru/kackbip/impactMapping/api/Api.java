@@ -21,7 +21,7 @@ public class Api implements IApi {
     }
 
     public <T> Observable<T> get(Class<T> clazz) {
-        return projectionRepository.restore(clazz);
+        return projectionRepository.observe(clazz);
     }
 
     public <T> Observable<Void> execute(T command) {

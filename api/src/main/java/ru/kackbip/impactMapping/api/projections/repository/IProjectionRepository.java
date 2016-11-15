@@ -8,5 +8,6 @@ import rx.Observable;
 
 public interface IProjectionRepository {
     Observable<Void> store(Object projection);
-    <T> Observable<T> restore(Class<T> clazz);
+    <T> Observable<T> observe(Class<T> clazz);
+    <T> Observable<T> get(Class<T> clazz);
 }

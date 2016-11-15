@@ -21,7 +21,7 @@ public class CreateGoalCommandExecutor implements ICommandExecutor<CreateGoalCom
 
     @Override
     public Observable<Void> process(CreateGoalCommand command) {
-        return projectionRepository.restore(Goals.class)
+        return projectionRepository.observe(Goals.class)
                 .onErrorResumeNext(throwable -> Observable.just(new Goals(new ArrayList<>())))
                 .map(goals -> {
                     goals.getGoals().add(goalFromCommand(command));
