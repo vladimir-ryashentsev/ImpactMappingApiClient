@@ -1,5 +1,7 @@
 package ru.kackbip.impactMapping.api.projections;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -34,6 +36,23 @@ public class Goals {
 
         public Date getDate() {
             return date;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if(obj==null) return false;
+            if(!(obj instanceof Goal)) return false;
+            Goal goal = (Goal)obj;
+            return title.equals(goal.getTitle()) &&
+                    date.equals(goal.getDate());
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder(17, 31)
+                    .append(title)
+                    .append(date)
+                    .toHashCode();
         }
     }
 }

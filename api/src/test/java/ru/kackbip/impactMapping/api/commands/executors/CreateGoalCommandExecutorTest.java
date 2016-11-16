@@ -18,6 +18,7 @@ import rx.observers.TestSubscriber;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +35,7 @@ public class CreateGoalCommandExecutorTest {
     private static final Date NEW_GOAL_DATE = new Date(3000);
 
     private static final Goals STORED_PROJECTION = new Goals(Arrays.asList(GOAL_1, GOAL_2));
+    private static final Goals STORED_PROJECTION2 = new Goals(Arrays.asList(new Goals.Goal(NEW_GOAL_TITLE, NEW_GOAL_DATE)));
 
     private CreateGoalCommandExecutor processor;
     private IProjectionRepository projectionRepository;
@@ -41,7 +43,7 @@ public class CreateGoalCommandExecutorTest {
     @Before
     public void init() {
         projectionRepository = mock(IProjectionRepository.class);
-        when(projectionRepository.store(STORED_PROJECTION)).thenReturn(Observable.empty());
+        when(projectionRepository.store(any(Goals.class))).thenReturn(Observable.just(null));
 
         processor = new CreateGoalCommandExecutor(projectionRepository);
     }
@@ -49,14 +51,14 @@ public class CreateGoalCommandExecutorTest {
     @Test
     public void processCommandWhenProjectionAlreadyExists() {
         when(projectionRepository.get(Goals.class)).thenReturn(Observable.just(STORED_PROJECTION));
-        verifySubscriber(createGoal());
+        verifyStoreSubscriber(createGoal());
         verifyCommunicationWithProjectionRepository(3);
     }
 
     @Test
     public void processCommandWhenProjectionDoesntExists(){
         when(projectionRepository.get(Goals.class)).thenReturn(Observable.error(new ProjectionNotFoundException()));
-        verifySubscriber(createGoal());
+        verifyStoreSubscriber(createGoal());
         verifyCommunicationWithProjectionRepository(1);
     }
 
@@ -67,8 +69,8 @@ public class CreateGoalCommandExecutorTest {
         return subscriber;
     }
 
-    private void verifySubscriber(TestSubscriber<Void> subscriber){
-        assertTrue(subscriber.getOnNextEvents().isEmpty());
+    private void verifyStoreSubscriber(TestSubscriber<Void> subscriber){
+        subscriber.assertValue(null);
         subscriber.assertNoErrors();
         subscriber.assertCompleted();
     }

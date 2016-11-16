@@ -71,12 +71,12 @@ public class ApiTest {
         TestSubscriber<Void> subscriber = new TestSubscriber<>();
 
         SomeCommand command = new SomeCommand();
-        when(commandExecutor.process(command)).thenReturn(Observable.empty());
+        when(commandExecutor.process(command)).thenReturn(Observable.just(null));
         api.execute(command).subscribe(subscriber);
 
         subscriber.assertNoErrors();
         subscriber.assertCompleted();
-        assertTrue(subscriber.getOnNextEvents().isEmpty());
+        subscriber.assertValue(null);
 
         verify(commandExecutor).process(command);
     }
