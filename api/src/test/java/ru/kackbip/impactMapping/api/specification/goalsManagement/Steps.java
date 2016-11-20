@@ -57,7 +57,7 @@ public class Steps {
         api.execute(command).subscribe(subscriber);
         subscriber.assertNoErrors();
         subscriber.assertCompleted();
-        assertTrue(subscriber.getOnNextEvents().isEmpty());
+        subscriber.assertValue(null);
     }
 
     @Then("the goal(title=$title, date=$date) appears in the goals list")
