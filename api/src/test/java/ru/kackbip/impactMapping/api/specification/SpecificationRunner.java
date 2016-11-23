@@ -1,40 +1,42 @@
 package ru.kackbip.impactMapping.api.specification;
 
-import org.jbehave.core.InjectableEmbedder;
-import org.jbehave.core.annotations.Configure;
-import org.jbehave.core.annotations.UsingEmbedder;
-import org.jbehave.core.annotations.UsingSteps;
-import org.jbehave.core.embedder.Embedder;
-import org.jbehave.core.embedder.StoryControls;
+import org.jbehave.core.Embeddable;
+import org.jbehave.core.configuration.Configuration;
+import org.jbehave.core.configuration.MostUsefulConfiguration;
+import org.jbehave.core.i18n.LocalizedKeywords;
+import org.jbehave.core.io.LoadFromClasspath;
 import org.jbehave.core.io.LoadFromRelativeFile;
 import org.jbehave.core.io.StoryFinder;
-import org.jbehave.core.junit.AnnotatedEmbedderRunner;
+import org.jbehave.core.junit.JUnitStories;
+import org.jbehave.core.model.ExamplesTableFactory;
 import org.jbehave.core.parsers.RegexPrefixCapturingPatternParser;
 import org.jbehave.core.parsers.gherkin.GherkinStoryParser;
+import org.jbehave.core.reporters.CrossReference;
 import org.jbehave.core.reporters.StoryReporterBuilder;
+import org.jbehave.core.steps.InjectableStepsFactory;
+import org.jbehave.core.steps.InstanceStepsFactory;
 import org.jbehave.core.steps.ParameterConverters;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Properties;
 
 import ru.kackbip.impactMapping.api.specification.goalsManagement.Steps;
 
+import static org.jbehave.core.io.CodeLocations.codeLocationFromClass;
+import static org.jbehave.core.reporters.Format.CONSOLE;
+import static org.jbehave.core.reporters.Format.HTML_TEMPLATE;
+import static org.jbehave.core.reporters.Format.TXT;
+import static org.jbehave.core.reporters.Format.XML_TEMPLATE;
+
 /**
- * Created by ryashentsev on 01.11.2016.
+ * Created by ryashentsev on 23.11.2016.
  */
 
-@RunWith(AnnotatedEmbedderRunner.class)
-@Configure(storyControls = SpecificationRunner.MyStoryControls.class, storyLoader = SpecificationRunner.MyStoryLoader.class, storyReporterBuilder = SpecificationRunner.MyReportBuilder.class,
-        parameterConverters = { SpecificationRunner.MyDateConverter.class }, storyParser = GherkinStoryParser.class)
-@UsingEmbedder(embedder = Embedder.class, generateViewAfterStories = true, ignoreFailureInStories = true, ignoreFailureInView = true, verboseFailures = true,
-        storyTimeoutInSecs = 100, threads = 2, metaFilters = "-skip")
-@UsingSteps(instances = { Steps.class })
-public class SpecificationRunner extends InjectableEmbedder {
+public class SpecificationRunner extends JUnitStories {
 
     private static URL SPECIFICATION_LOCATION;
 
@@ -46,42 +48,51 @@ public class SpecificationRunner extends InjectableEmbedder {
         }
     }
 
-    @Test
-    public void run() throws MalformedURLException {
-        List<String> storyPaths = new StoryFinder().findPaths(SPECIFICATION_LOCATION, "**/*.story", "");
-        injectedEmbedder().runStoriesAsPaths(storyPaths);
+    private final CrossReference xref = new CrossReference();
+
+    public SpecificationRunner() {
+        configuredEmbedder().embedderControls().doGenerateViewAfterStories(true).doIgnoreFailureInStories(false)
+                .doIgnoreFailureInView(true).doVerboseFailures(true).useThreads(2).useStoryTimeouts("10");
     }
 
-    public static class MyStoryControls extends StoryControls {
-        public MyStoryControls() {
-            doDryRun(false);
-            doSkipScenariosAfterFailure(false);
-        }
+    @Override
+    public Configuration configuration() {
+        Class<? extends Embeddable> embeddableClass = this.getClass();
+        Properties viewResources = new Properties();
+        viewResources.put("decorateNonHtml", "true");
+        ParameterConverters parameterConverters = new ParameterConverters();
+        ExamplesTableFactory examplesTableFactory = new ExamplesTableFactory(new LocalizedKeywords(), new LoadFromClasspath(embeddableClass), parameterConverters);
+        parameterConverters.addConverters(new ParameterConverters.DateConverter(new SimpleDateFormat("yyyy-MM-dd")),
+                new ParameterConverters.ExamplesTableConverter(examplesTableFactory));
+        return new MostUsefulConfiguration()
+                .useStoryLoader(new MyStoryLoader())
+                .useStoryParser(new GherkinStoryParser())
+                .useStoryReporterBuilder(new StoryReporterBuilder()
+                        .withCodeLocation(codeLocationFromClass(embeddableClass))
+                        .withDefaultFormats()
+                        .withViewResources(viewResources)
+                        .withFormats(CONSOLE, TXT, HTML_TEMPLATE, XML_TEMPLATE)
+                        .withFailureTrace(true)
+                        .withFailureTraceCompression(true)
+                        .withCrossReference(xref))
+                .useParameterConverters(parameterConverters)
+                .useStepPatternParser(new RegexPrefixCapturingPatternParser());
+    }
+
+    @Override
+    public InjectableStepsFactory stepsFactory() {
+        return new InstanceStepsFactory(configuration(),
+                new Steps());
+    }
+
+    @Override
+    protected List<String> storyPaths() {
+        return new StoryFinder().findPaths(SPECIFICATION_LOCATION, "**/*.story", "");
     }
 
     public static class MyStoryLoader extends LoadFromRelativeFile {
-
         public MyStoryLoader() {
             super(SPECIFICATION_LOCATION);
         }
     }
-
-    public static class MyReportBuilder extends StoryReporterBuilder {
-        public MyReportBuilder() {
-            this.withFormats(org.jbehave.core.reporters.Format.CONSOLE, org.jbehave.core.reporters.Format.TXT, org.jbehave.core.reporters.Format.HTML, org.jbehave.core.reporters.Format.XML).withDefaultFormats();
-        }
-    }
-
-    public static class MyRegexPrefixCapturingPatternParser extends RegexPrefixCapturingPatternParser {
-        public MyRegexPrefixCapturingPatternParser() {
-            super("%");
-        }
-    }
-
-    public static class MyDateConverter extends ParameterConverters.DateConverter {
-        public MyDateConverter() {
-            super(new SimpleDateFormat("yyyy-MM-dd"));
-        }
-    }
-
 }
