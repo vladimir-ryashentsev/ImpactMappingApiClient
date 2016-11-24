@@ -1,5 +1,8 @@
 package ru.kackbip.impactMapping.api.specification;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import org.jbehave.core.Embeddable;
 import org.jbehave.core.configuration.Configuration;
 import org.jbehave.core.configuration.MostUsefulConfiguration;
@@ -18,13 +21,32 @@ import org.jbehave.core.steps.InstanceStepsFactory;
 import org.jbehave.core.steps.ParameterConverters;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
-import ru.kackbip.impactMapping.api.specification.goalsManagement.Steps;
+import ru.kackbip.impactMapping.api.Api;
+import ru.kackbip.impactMapping.api.IApi;
+import ru.kackbip.impactMapping.api.commands.AddGoalCommand;
+import ru.kackbip.impactMapping.api.commands.RemoveGoalCommand;
+import ru.kackbip.impactMapping.api.commands.executors.AddGoalCommandExecutor;
+import ru.kackbip.impactMapping.api.commands.executors.ICommandExecutor;
+import ru.kackbip.impactMapping.api.commands.executors.RemoveGoalCommandExecutor;
+import ru.kackbip.impactMapping.api.projections.repository.ProjectionRepository;
+import ru.kackbip.impactMapping.api.specification.goalsManagement.GivenSteps;
+import ru.kackbip.impactMapping.api.specification.goalsManagement.ThenSteps;
+import ru.kackbip.impactMapping.api.specification.goalsManagement.WhenSteps;
+import ru.kackbip.infrastructure.storage.pojo.GsonPojoStorage;
+import ru.kackbip.infrastructure.storage.pojo.GsonStringifier;
+import ru.kackbip.infrastructure.storage.pojo.IStringifier;
+import ru.kackbip.infrastructure.storage.string.IStringStorage;
+import ru.kackbip.infrastructure.storage.string.local.InMemoryStringStorage;
 
 import static org.jbehave.core.io.CodeLocations.codeLocationFromClass;
 import static org.jbehave.core.reporters.Format.CONSOLE;
@@ -62,8 +84,11 @@ public class SpecificationRunner extends JUnitStories {
         viewResources.put("decorateNonHtml", "true");
         ParameterConverters parameterConverters = new ParameterConverters();
         ExamplesTableFactory examplesTableFactory = new ExamplesTableFactory(new LocalizedKeywords(), new LoadFromClasspath(embeddableClass), parameterConverters);
-        parameterConverters.addConverters(new ParameterConverters.DateConverter(new SimpleDateFormat("yyyy-MM-dd")),
-                new ParameterConverters.ExamplesTableConverter(examplesTableFactory));
+        parameterConverters.addConverters(
+                new ParameterConverters.DateConverter(new SimpleDateFormat("yyyy-MM-dd")),
+                new ParameterConverters.ExamplesTableConverter(examplesTableFactory),
+                new UUIDConverter()
+        );
         return new MostUsefulConfiguration()
                 .useStoryLoader(new MyStoryLoader())
                 .useStoryParser(new GherkinStoryParser())
@@ -81,8 +106,23 @@ public class SpecificationRunner extends JUnitStories {
 
     @Override
     public InjectableStepsFactory stepsFactory() {
+        IApi api = createApi();
         return new InstanceStepsFactory(configuration(),
-                new Steps());
+                new GivenSteps(api),
+                new WhenSteps(api),
+                new ThenSteps(api));
+    }
+
+    private IApi createApi() {
+        IStringStorage stringStorage = new InMemoryStringStorage();
+        Gson gson = new GsonBuilder().create();
+        IStringifier stringifier = new GsonStringifier(gson);
+        GsonPojoStorage pojoStorage = new GsonPojoStorage(stringStorage, stringifier);
+        ProjectionRepository projectionRepository = new ProjectionRepository(pojoStorage);
+        Map<Class, ICommandExecutor> commandExecutors = new HashMap<>();
+        commandExecutors.put(AddGoalCommand.class, new AddGoalCommandExecutor(projectionRepository));
+        commandExecutors.put(RemoveGoalCommand.class, new RemoveGoalCommandExecutor(projectionRepository));
+        return new Api(projectionRepository, commandExecutors);
     }
 
     @Override
@@ -90,9 +130,24 @@ public class SpecificationRunner extends JUnitStories {
         return new StoryFinder().findPaths(SPECIFICATION_LOCATION, "**/*.story", "");
     }
 
-    public static class MyStoryLoader extends LoadFromRelativeFile {
+    private static class MyStoryLoader extends LoadFromRelativeFile {
         public MyStoryLoader() {
             super(SPECIFICATION_LOCATION);
+        }
+    }
+
+    public class UUIDConverter implements ParameterConverters.ParameterConverter {
+        @Override
+        public boolean accept(Type type) {
+            if (type instanceof Class<?>) {
+                return UUID.class.isAssignableFrom((Class<?>) type);
+            }
+            return false;
+        }
+
+        @Override
+        public Object convertValue(String value, Type type) {
+            return UUID.fromString(value);
         }
     }
 }

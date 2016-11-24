@@ -2,7 +2,7 @@ package ru.kackbip.impactMapping.api.commands.executors;
 
 import java.util.ArrayList;
 
-import ru.kackbip.impactMapping.api.commands.CreateGoalCommand;
+import ru.kackbip.impactMapping.api.commands.AddGoalCommand;
 import ru.kackbip.impactMapping.api.projections.Goals;
 import ru.kackbip.impactMapping.api.projections.repository.IProjectionRepository;
 import rx.Observable;
@@ -11,16 +11,16 @@ import rx.Observable;
  * Created by ryashentsev on 04.11.2016.
  */
 
-public class CreateGoalCommandExecutor implements ICommandExecutor<CreateGoalCommand> {
+public class AddGoalCommandExecutor implements ICommandExecutor<AddGoalCommand> {
 
     private IProjectionRepository projectionRepository;
 
-    public CreateGoalCommandExecutor(IProjectionRepository projectionRepository) {
+    public AddGoalCommandExecutor(IProjectionRepository projectionRepository) {
         this.projectionRepository = projectionRepository;
     }
 
     @Override
-    public Observable<Void> process(CreateGoalCommand command) {
+    public Observable<Void> process(AddGoalCommand command) {
         return projectionRepository.get(Goals.class)
                 .onErrorResumeNext(throwable -> Observable.just(new Goals(new ArrayList<>())))
                 .map(goals -> {
@@ -30,7 +30,7 @@ public class CreateGoalCommandExecutor implements ICommandExecutor<CreateGoalCom
                 .flatMap(projectionRepository::store);
     }
 
-    private Goals.Goal goalFromCommand(CreateGoalCommand command) {
-        return new Goals.Goal(command.getTitle(), command.getDate());
+    private Goals.Goal goalFromCommand(AddGoalCommand command) {
+        return new Goals.Goal(command.getId(), command.getTitle(), command.getDate());
     }
 }
