@@ -1,8 +1,9 @@
-package ru.kackbip.impactMapping.api.commands.executors;
+package ru.kackbip.impactMapping.api.commands.executors.local;
 
 import java.util.ArrayList;
 
 import ru.kackbip.impactMapping.api.commands.AddGoalCommand;
+import ru.kackbip.impactMapping.api.commands.executors.ICommandExecutor;
 import ru.kackbip.impactMapping.api.projections.Goals;
 import ru.kackbip.impactMapping.api.projections.repository.IProjectionRepository;
 import rx.Observable;

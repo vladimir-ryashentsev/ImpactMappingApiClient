@@ -25,19 +25,14 @@ import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
 import ru.kackbip.impactMapping.api.Api;
 import ru.kackbip.impactMapping.api.IApi;
-import ru.kackbip.impactMapping.api.commands.AddGoalCommand;
-import ru.kackbip.impactMapping.api.commands.RemoveGoalCommand;
-import ru.kackbip.impactMapping.api.commands.executors.AddGoalCommandExecutor;
-import ru.kackbip.impactMapping.api.commands.executors.ICommandExecutor;
-import ru.kackbip.impactMapping.api.commands.executors.RemoveGoalCommandExecutor;
+import ru.kackbip.impactMapping.api.commands.executors.CommandExecutorsProvider;
+import ru.kackbip.impactMapping.api.commands.executors.local.LocalCommandExecutorsProvider;
 import ru.kackbip.impactMapping.api.projections.repository.ProjectionRepository;
 import ru.kackbip.impactMapping.api.specification.goalsManagement.GivenSteps;
 import ru.kackbip.impactMapping.api.specification.goalsManagement.ThenSteps;
@@ -119,10 +114,8 @@ public class SpecificationRunner extends JUnitStories {
         IStringifier stringifier = new GsonStringifier(gson);
         GsonPojoStorage pojoStorage = new GsonPojoStorage(stringStorage, stringifier);
         ProjectionRepository projectionRepository = new ProjectionRepository(pojoStorage);
-        Map<Class, ICommandExecutor> commandExecutors = new HashMap<>();
-        commandExecutors.put(AddGoalCommand.class, new AddGoalCommandExecutor(projectionRepository));
-        commandExecutors.put(RemoveGoalCommand.class, new RemoveGoalCommandExecutor(projectionRepository));
-        return new Api(projectionRepository, commandExecutors);
+        CommandExecutorsProvider executorsProvider = new LocalCommandExecutorsProvider(projectionRepository);
+        return new Api(projectionRepository, executorsProvider);
     }
 
     @Override

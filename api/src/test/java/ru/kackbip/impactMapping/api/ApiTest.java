@@ -3,9 +3,7 @@ package ru.kackbip.impactMapping.api;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import ru.kackbip.impactMapping.api.commands.executors.CommandExecutorsProvider;
 import ru.kackbip.impactMapping.api.commands.executors.ICommandExecutor;
 import ru.kackbip.impactMapping.api.projections.repository.IProjectionRepository;
 import rx.Observable;
@@ -33,16 +31,15 @@ public class ApiTest {
     private Api api;
     private IProjectionRepository projectionRepository;
     private ICommandExecutor<SomeCommand> commandExecutor;
+    private CommandExecutorsProvider commandExecutorsProvider;
 
     @Before
     public void init() {
         projectionRepository = mock(IProjectionRepository.class);
-
         commandExecutor = mock(ICommandExecutor.class);
-        Map<Class, ICommandExecutor> commandExecutors = new HashMap<>();
-        commandExecutors.put(SomeCommand.class, commandExecutor);
-
-        api = new Api(projectionRepository, commandExecutors);
+        commandExecutorsProvider = mock(CommandExecutorsProvider.class);
+        when(commandExecutorsProvider.getCommandExecutorForCommandClass(SomeCommand.class)).thenReturn(commandExecutor);
+        api = new Api(projectionRepository, commandExecutorsProvider);
     }
 
     @Test

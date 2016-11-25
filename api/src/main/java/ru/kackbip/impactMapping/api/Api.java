@@ -1,8 +1,7 @@
 package ru.kackbip.impactMapping.api;
 
-import java.util.Map;
-
 import ru.kackbip.impactMapping.api.commands.executors.ICommandExecutor;
+import ru.kackbip.impactMapping.api.commands.executors.CommandExecutorsProvider;
 import ru.kackbip.impactMapping.api.projections.repository.IProjectionRepository;
 import rx.Observable;
 
@@ -13,11 +12,11 @@ import rx.Observable;
 public class Api implements IApi {
 
     private IProjectionRepository projectionRepository;
-    private Map<Class, ICommandExecutor> commandsExecutors;
+    private CommandExecutorsProvider commandExecutorsProvider;
 
-    public Api(IProjectionRepository projectionRepository, Map<Class, ICommandExecutor> commandExecutors) {
+    public Api(IProjectionRepository projectionRepository, CommandExecutorsProvider commandExecutorsProvider) {
         this.projectionRepository = projectionRepository;
-        this.commandsExecutors = commandExecutors;
+        this.commandExecutorsProvider = commandExecutorsProvider;
     }
 
     public <T> Observable<T> observe(Class<T> clazz) {
@@ -26,7 +25,7 @@ public class Api implements IApi {
 
     public <T> Observable<Void> execute(T command) {
         if (command == null) return Observable.error(new IllegalArgumentException("Can't execute null command"));
-        @SuppressWarnings("unchecked") ICommandExecutor<T> commandExecutor = commandsExecutors.get(command.getClass());
+        @SuppressWarnings("unchecked") ICommandExecutor<T> commandExecutor = commandExecutorsProvider.getCommandExecutorForCommandClass(command.getClass());
         if (commandExecutor == null) return Observable.error(new CommandExecutorNotFound(command));
         return commandExecutor.process(command);
     }
